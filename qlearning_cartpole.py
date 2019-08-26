@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import random
 from collections import deque
 
@@ -13,9 +14,11 @@ from src.utils import save_qnet, select_maxq_action
 
 # if gpu is to be used
 use_cuda = False #torch.cuda.is_available()
+
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
+
 Tensor = FloatTensor
 
 
@@ -60,6 +63,7 @@ def replay_and_optim(memory, qnet, optimizer, criterion, config):
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * config.gamma) + reward_batch
     # Undo volatility (which was used to prevent unnecessary gradients)
+    # hv: detach in pytorch is similar to the stopgrad in the TF
     expected_state_action_values = expected_state_action_values.detach()
 
     # Compute Huber loss
@@ -78,6 +82,8 @@ if __name__ == "__main__":
     config = cartpole_config
     qnet = QNet(config.state_dim,config.dqn_hidden_dims,config.action_size)
     memory = ReplayMemory(config.buffer_capacity)
+    # hv: epsilon greedy policy is the behavior policy
+    # (epsilon greedy of the policy from the learned Q in the DQN algo.).
     epsilon = config.dqn_epsilon
     scores = deque(maxlen=100)
     dp_scores = deque(maxlen=30)
@@ -88,6 +94,7 @@ if __name__ == "__main__":
         state = preprocess_state(env.reset(),config.state_dim)
         done = False
         n_steps = 0
+        # hv: save a trajectory in the memory made with the epsilon-greedy policy
         while not done:
             # Select and perform an action
             action = select_action(state,qnet,epsilon=epsilon,action_size=config.action_size)
@@ -103,6 +110,7 @@ if __name__ == "__main__":
             n_steps += 1
         scores.append(n_steps)
 
+        # hv: evaluate the greedy policy
         state = preprocess_state(env.reset(), config.state_dim)
         done = False
         n_steps = 0

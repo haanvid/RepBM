@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import numpy as np
 import random
@@ -5,7 +6,8 @@ import torch
 from torch.autograd import Variable
 
 # if gpu is to be used
-use_cuda = torch.cuda.is_available()
+# use_cuda = torch.cuda.is_available()
+use_cuda = False
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
@@ -190,4 +192,3 @@ def error_info(estm, target, method_name):
           .format(method_name, np.mean(estm), np.std(estm),
                   (np.mean(estm) - np.mean(target)) ** 2, np.mean((estm - target) ** 2)))
     return (np.mean(estm) - np.mean(target)) ** 2, np.mean((estm - target) ** 2)
-

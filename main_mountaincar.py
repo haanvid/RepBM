@@ -8,7 +8,7 @@ from src.utils import load_qnet, error_info
 from collections import deque
 
 # if gpu is to be used
-use_cuda = torch.cuda.is_available()
+use_cuda = False # torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor

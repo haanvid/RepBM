@@ -68,6 +68,7 @@ class MDPnet(nn.Module):
         self.rep_dim = prev_hidden_size
 
         # Transition
+        # prev_hidden_size = self.rep_dim
         mlp_layers = []
         for next_hidden_size in config.transition_hidden_dims:
             mlp_layers.extend([
@@ -96,6 +97,7 @@ class MDPnet(nn.Module):
 
     def forward(self,state):
         rep = self.representation(state)
+        # hv: view() in pytorch used on the pytorch tensors is equivalent to the reshape() of TF
         next_state_diff = self.transition(rep).view(-1,self.config.action_size,self.config.state_dim)
         reward = self.reward(rep).view(-1,self.config.action_size)
         #soft_done = self.terminal(state)

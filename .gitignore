@@ -3,6 +3,7 @@
 .env
 .DS_Store
 *.pyc
+*.tars
 src/__pycache__/*
 __pycache__/*
 

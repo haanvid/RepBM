@@ -1,3 +1,4 @@
+
 import time
 from src.models import QtNet, MDPnet, TerminalClassifier
 from src.memory import MRDRTransition, TrajectorySet, SampleSet
@@ -6,7 +7,8 @@ from collections import deque
 import torch.optim as optim
 
 # if gpu is to be used
-use_cuda = torch.cuda.is_available()
+# use_cuda = torch.cuda.is_available()
+use_cuda = False
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
 ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
@@ -26,6 +28,8 @@ def mrdr_loss(q_values, onehot_rewards, weights, pib, pie):
     q = pie*q_values - onehot_rewards
     q = q.unsqueeze(2) # batch_size x action_size x 1
 
+    # hv: batch matrix multiplication (bmm)
+    # bmm on 10x3x4, 10x4x5 yields 10x3x5 matrix. The first dim is the batch dim
     error = torch.bmm(Omega,q)
     error = torch.bmm(torch.transpose(q,1,2),error)
     error = error.squeeze()
@@ -322,7 +326,7 @@ def rollout_batch(init_states, mdpnet, is_done, num_rollout, policy_qnet, epsilo
     while not (sum(done.long() == batch_size) or n_steps >= maxlength):
         if n_steps > 0:
             actions = epsilon_greedy_action_batch(states, policy_qnet, epsilon, action_size)
-        states_re = Tensor(np.float32(config.rescale)*states)
+        states_re = Tensor(Tensor(np.float32(config.rescale))*states)
         states_diff, reward, _ = mdpnet.forward(states_re.type(Tensor))
         states_diff = states_diff.detach()
         reward = reward.detach().gather(1, actions).squeeze()
@@ -330,7 +334,7 @@ def rollout_batch(init_states, mdpnet, is_done, num_rollout, policy_qnet, epsilo
         expanded_actions = expanded_actions.expand(-1, -1, state_dim)
         states_diff = states_diff.gather(1, expanded_actions).squeeze()
         states_diff = states_diff.view(-1, config.state_dim)
-        states_diff = 1 / np.float32(config.rescale) * states_diff
+        states_diff = Tensor(1 / np.float32(config.rescale)) * states_diff
         next_states = states_diff + states
         states = next_states
         t_reward = t_reward + (1 - done).float() * reward
@@ -549,8 +553,13 @@ def train_pipeline(env, config, eval_qnet, seedvec = None):
             next_state, reward, done, _ = env.step(action.item())
             reward = Tensor([reward])
             next_state = preprocess_state(next_state, config.state_dim)
-            next_state_re = np.float32(config.rescale)*next_state
-            state_re = np.float32(config.rescale)*state
+
+            # below line is modified by hv
+            # next_state_re = np.float32(config.rescale)*next_state
+            # state_re = np.float32(config.rescale) * state
+            next_state_re = torch.from_numpy(np.float32(config.rescale)) * next_state
+            state_re = torch.from_numpy(np.float32(config.rescale)) * state
+
             if i_episode < config.train_num_traj:
                 memory.push(state_re, action, next_state_re, reward, done, isweight, acc_isweight, n_steps, factual,
                             last_factual, acc_soft_isweight, soft_isweight, soft_pie, p_pie, p_pib)
